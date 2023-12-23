@@ -1,0 +1,4 @@
+{
+    "vsintellicode.modify.editor.suggestSelection": "enabled",
+    "editor.defaultFormatter": "ms-python.black-formatter"
+}

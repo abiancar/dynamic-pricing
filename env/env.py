@@ -1,5 +1,5 @@
-from city import City
-from trip import Trip
+from city.city import City
+from trip.trip import Trip
 
 import random
 import numpy
@@ -8,32 +8,27 @@ import itertools
 import math
 
 
-philadelphia = City("Philadelphia", 1527886, temp=70, ue_rate=0.1, gas=3.5)
-nyc = City("New York City", 7888121, temp=67, ue_rate=0.05, gas=5)
-washington = City("Washington DC", 631693, temp=72, ue_rate=0.07, gas=4)
-baltimore = City("Baltimore", 563455, temp=69, ue_rate=0.024, gas=3.37)
-boston = City("Boston", 654776, temp=50, ue_rate=0.006, gas=5)
+philadelphia = City("Philadelphia", 1527886, ue_rate=0.1, gas=3.5)
+nyc = City("New York City", 7888121, ue_rate=0.05, gas=5)
+washington = City("Washington DC", 631693, ue_rate=0.07, gas=4)
+baltimore = City("Baltimore", 563455, ue_rate=0.024, gas=3.37)
+boston = City("Boston", 654776, ue_rate=0.006, gas=5)
 
 
 class Env:
     def __init__(self):
         self.cities = [philadelphia, nyc, washington, baltimore, boston]
 
-        # Using list comprehension and Trip class to generate the upcoming trips
-        self.upcoming_trips = []
+        # Using list comprehension and Trip c  lass to generate the upcoming trips
+        self.upcoming_trips = self.generate_trips(50)
         self.completed_trips = []
-        possible_trip_combinations = [
-            (origin, destination)
-            for origin, destination in itertools.combinations(self.cities, 2)
-        ]
-        for i in range(50):
-            comb = random.choice(possible_trip_combinations)
-            orgdest = numpy.random.choice(
-                comb, size=2, replace=False
-            )  # from pair, randomly choose origin + destination
-            self.upcoming_trips.append(Trip(orgdest[0], orgdest[1]))
-
         self.date = datetime.datetime.now()
+
+    def generate_trips(self, num_trips):
+        possible_trip_combinations = list(itertools.combinations(self.cities, 2))
+        return [
+            Trip(*random.choice(possible_trip_combinations)) for _ in range(num_trips)
+        ]
 
     def add_city(self, city):
         self.cities.append(city)
@@ -77,16 +72,18 @@ class Env:
     def update_temp(self):
         # adding variability to daily temp
 
-        if (self.date.month // 3) + 1 in [1, 5]:
-            av_temp = 30  # winter
-        if (self.date.month // 3) + 1 == 2:
-            av_temp = 55  # spring
-        if (self.date.month // 3) + 1 == 3:
-            av_temp = 80  # summer
-        if (self.date.month // 3) + 1 == 4:
-            av_temp = 55  # fall
+        temp_date = self.date.date()
+        if temp_date.month == 2 and temp_date.day == 29:
+            temp_date = datetime.date(2022, 2, 28)
+        if temp_date.year != 2022:
+            temp_date = datetime.date(2022, temp_date.month, temp_date.day)
 
         for city in self.cities:
-            city.temp = (random.gauss(av_temp, 10) + city.temp) / 2
+            city.temp = random.gauss(city.get_temp(temp_date), 1)
 
     ### for now we are keeping unemployment rate + pop fixed
+
+    def get_city(self, name):
+        for city in self.cities:
+            if city.name == name:
+                return city

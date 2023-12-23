@@ -1,5 +1,5 @@
 import datetime
-from city import City
+from city.city import City
 import random
 import math
 
