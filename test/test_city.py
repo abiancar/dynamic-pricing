@@ -2,22 +2,10 @@ from city.city import City
 
 
 def test_city_creation():
-    philly = City(name="Philadelphia", pop=600000, ue_rate=0.10, gas=3.00)
+    philly = City(name="Philadelphia", pop=600000, ue_rate=0.10, gas=3.00, id=3)
 
     assert philly.pop == 600000
     assert philly.name == "Philadelphia"
     assert philly.ue_rate == 0.1
     assert philly.base_gas_prices == 3
-
-
-def test_city_update_gas_prices():
-    philly = City(name="Philadelphia", pop=600000, ue_rate=0.10, gas=3.00)
-
-    assert philly.base_gas_prices == 3
-
-    for i in range(10000):
-        philly.update_gas_prices()
-
-    change = (philly.gas_prices - philly.base_gas_prices) / philly.base_gas_prices * 100
-    print(f"gas prices moved {'down' if change >= 0 else 'down' } by {round(change)} %")
-    assert philly.gas_prices != 3
+    assert philly.id == 3

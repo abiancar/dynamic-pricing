@@ -26,7 +26,7 @@ distances = {
         "Baltimore": 404,
         "Washington DC": 443,
         "Philadelphia": 308,
-        "New York City": 215,  # This value is based on an average of common distances found online.
+        "New York City": 215,
     },
     "New York City": {
         "Baltimore": 191,
@@ -45,7 +45,7 @@ class Trip:
             departure_time if departure_time else self.get_random_time()
         )
 
-        self.average_cost = 150
+        self.price = 100
         self.demand = 0
         self.car_distance = distances[self.origin.name][self.destination.name]
 
@@ -62,7 +62,7 @@ class Trip:
         return datetime.datetime(curr_y, curr_m, curr_d, random_hr, random_min)
 
     # more demand during business hours
-    def calc_hour_modifier(self):
+    def calculate_hour_modifier(self):
         # Assuming self.departure_time is a datetime object
         # Check if it's a weekday
         if self.departure_time.weekday() < 5:  # Monday is 0, Sunday is 6
@@ -83,7 +83,7 @@ class Trip:
         # Calculate the average temperature
         avg_temp = (self.origin.temp + self.destination.temp) / 2
         # Determine the deviation from the ideal temperature
-        deviation = abs(avg_temp - 68)
+        deviation = abs(avg_temp - 23)
         # Apply the deviation in a non-linear fashion, with no penalty within a comfortable range
         weather_modifier = 1 - (
             0.005 * deviation if deviation > 5 else 0
@@ -92,13 +92,12 @@ class Trip:
 
     def calculate_price_modifier(self):
         # Assuming that prices above 100 decrease demand and below 100 increase demand
-        price_difference = self.average_cost - 100
+        ideal_price = 100
+        price_difference = self.price - ideal_price
         # Apply a softer, bounded exponential curve instead of a cubic
-        price_modifier = (
-            math.exp(-0.05 * price_difference)
-            if price_difference > 0
-            else 1 + 0.05 * price_difference
-        )
+        price_modifier = math.exp(-0.05 * price_difference)
+        if self.price <= ideal_price:
+            price_modifier = abs(math.exp(-0.05 * price_difference))
         return price_modifier
 
     def unemployment_demand_modifier(self):
@@ -135,41 +134,42 @@ class Trip:
 
         return (origin_modifier + destination_modifier) / 2
 
+    def calculate_train_minus_car(self):
+        # cost per gallon * number of gallons
+        driving_cost = self.origin.gas_prices * self.car_distance / 36
+        driving_cost_difference = driving_cost - self.price
+        return driving_cost_difference
+
     def calculate_gas_modifier(self):
         # Logarithmic adjustment, where the effect of gas prices plateaus at a certain point.
 
         # average car gets 36 miles per gallon
+        driving_cost_difference = self.calculate_train_minus_car()
+        # print(driving_cost_difference)
+        if driving_cost_difference < 0:
+            # If driving is cheaper than average, increase demand
+            return 1 + 0.01 * abs(driving_cost_difference)
+        else:
+            # If driving is more expensive, decrease demand
+            return 1 - 0.01 * driving_cost_difference
 
-        # cost per gallon * number of gallons
-        driving_cost = self.origin.gas_prices * self.car_distance / 36
-        driving_cost_difference = driving_cost - self.average_cost
-
-        print(driving_cost_difference)
-        return (
-            0
-            if driving_cost_difference == 0
-            else -2 * math.log1p(driving_cost_difference)
-            if driving_cost_difference > 0
-            else 2 * math.log1p(-1 * driving_cost_difference)
-        )
+    def get_base_demand(self):
+        return ((self.origin.pop + self.destination.pop) / 2) ** 0.5
 
     def calculate_demand(self):
         # Assuming the pops are large, we can take a much smaller percentage
-        base_demand = (
-            self.origin.pop * self.destination.pop
-        ) ** 0.5  # Square root as an example
 
         """modifiers"""
         # Ensure modifiers are between 0 and 1
         gas_modifier = self.calculate_gas_modifier()
         unemployment_modifier = self.unemployment_demand_modifier()
         weather_modifier = self.calculate_weather_modifier()
-        datetime_modifier = self.calc_hour_modifier()
+        datetime_modifier = self.calculate_hour_modifier()
         price_modifier = self.calculate_price_modifier()
 
         # Apply modifiers using a product, ensuring none of them can exceed a multiplier of 1
         demand = (
-            base_demand
+            self.get_base_demand()
             * gas_modifier
             * unemployment_modifier
             * weather_modifier
@@ -177,17 +177,13 @@ class Trip:
             * price_modifier
         )
 
-        # Introduce elasticity (for example, price elasticity)
-        elasticity = (
-            -0.15
-        )  # This is an example value; it would need to be empirically determined
-        demand *= 1 + elasticity * (self.average_cost - 100)
-
         # Cap the demand to the lower of the two city pops
-        max_demand = min(self.origin.pop, self.destination.pop)
-        demand = min(demand, max_demand)
+        pop_cap = min(self.origin.pop, self.destination.pop)
+        demand = min(demand, pop_cap)
+
+        # prevent negative demand
         self.demand = max(0, demand)
         return self.demand
 
     def __str__(self):
-        return f"{self.origin.name} --> {self.destination.name} at {self.departure_time}. Demand: {round(self.demand)} interested riders @ ${round(self.average_cost, 2)}"
+        return f"{self.origin.name} --> {self.destination.name} at {self.departure_time}. Demand: {round(self.demand)} interested riders @ ${round(self.price, 2)}"

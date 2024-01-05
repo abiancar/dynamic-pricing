@@ -3,20 +3,14 @@ import pandas as pd
 
 
 class City:
-    def __init__(self, name, pop, ue_rate, gas):
+    def __init__(self, name, pop, ue_rate, gas, id):
         self.name = name
         self.pop = pop
         self.temp = 0
         self.ue_rate = ue_rate
         self.base_gas_prices = gas
         self.gas_prices = gas
-
-    def update_gas_prices(self):
-        outcome = random.choice([-0.01, 0, 0.01])
-        self.gas_prices += outcome
-        # there is 1% chance that this gas price will become the new 'base'
-        if random.randint(0, 100) == 52:
-            self.base_gas_prices = self.gas_prices
+        self.id = id
 
     def get_temp(self, date):
         city_file_name = self.name.lower().replace(" ", "_")

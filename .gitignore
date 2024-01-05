@@ -1,4 +1,5 @@
 bin/
 lib/
 share/
-.weather/
+.weather_data
+.venv
