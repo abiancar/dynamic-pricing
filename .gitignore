@@ -3,3 +3,5 @@ lib/
 share/
 .weather_data
 .venv
+__pycache__/*
+*.zip

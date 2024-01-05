@@ -1,7 +1,0 @@
-Problems::
-
--- Improve weather patterns using existing data (easy to pull from internet + add variability)
-    -- https://github.com/meteostat/meteostat-python
--- Improve gas prices, correlation between gas prices and intercity  // has research already been done on the impact of gas price and travel in using
-    -- Almost 60% of travelers (Washington Post)
--- Reinforcement
